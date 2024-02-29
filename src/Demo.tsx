@@ -23,8 +23,14 @@ type MetaFieldDefinition = {
   key: string,
   unique: boolean,
   inputType: 'text' | 'number' | 'radiogroup' | 'checkbox',
+  rules: undefined | object,
 }
 
+/**
+ * 1. unqiue field, rule props need to be merged among all contexts, only one value possible.
+ * 2. non-unique field,  rule props and value varies in different context.
+ * 3. field with same key can appear in different pages, or appear multiple times in the same page.
+ */
 const demoFieldDef1: FieldDefinition = {
   key: 'demo-field-1',
   unique: true,
@@ -88,6 +94,7 @@ const demoFieldDef5: FieldDefinition = {
   page: 'demo-page-2',
   pageSlot: 'main/section-key-1',
 }
+
 const productTypeA = {
   tags: ['UE', 'DFO'],
   displayName: 'PT-1',
@@ -105,6 +112,52 @@ const productTypeB = {
     demoFieldDef4,
     demoFieldDef5,
   ]
+}
+
+const v2ProductType1 = {
+  tags: ['UE', 'DFO'],
+  displayName: 'DFO',
+  pages: ['demo-page-key-1', 'demo-page-key-2'],
+  pageFields: {
+    'demo-page-key-1/section-key-1': ['demo-field-1', 'demo-field-2'],
+    'demo-page-key-2/section-key-1': ['demo-field-3'],
+  },
+  fields: [
+    demoFieldDef1,
+    demoFieldDef2,
+    demoFieldDef3,
+  ]
+}
+
+const v2ProductType2 = {
+  tags: ['UE', 'AFO'],
+  displayName: 'AFO',
+  pages: ['demo-page-key-1', 'demo-page-key-2', 'demo-page-key-3'],
+  pageFields: {
+    'demo-page-key-1/section-key-1': ['demo-field-1', 'demo-field-2'],
+    'demo-page-key-2/section-key-1': ['demo-field-4'],
+  },
+  fields: [
+    demoFieldDef1,
+    demoFieldDef2,
+    demoFieldDef3,
+  ]
+}
+
+const v3ProductType = {
+  tags: ['UE', 'AFO'],
+  displayName: 'AFO',
+  dir: 'ot/ue',
+  pages: ['demo-page-key-1', 'demo-page-key-2', 'demo-page-key-3'], // fields are pre-defined in each page
+  fieldRules: {
+    demoFieldDef1: {
+      isVisible: true
+    },
+    demoFieldDef2: {
+      required: { "if": [{ "===": [{ "var": "field-1" }, "target"] }, true, false] }
+    },
+    demoFieldDef3: {},
+  }
 }
 
 type PageContent = ReactElement | ReactElement
@@ -139,34 +192,45 @@ const createPageRegister = () => {
 }
 
 
-const createFieldDefManager = () => {
-  const members = []
+const createFieldRegister = () => {
+  const records = new Map()
+  const uniqueDefs = new Set()
   return {
-    add(def: FieldDefinition) {
-      if (def.unique) {
-        if (members.length === 0) {
-          members.push(def)
+    add(fDef: FieldDefinition, pId: string) {
+      const key = fDef.key
+      if (!records.has(key)) {
+        records.set(key, [])
+        if (fDef.unique) {
+          uniqueDefs.add(key)
         }
-      } else {
-        members.push(def)
+      }
+      records.get(key).push({
+        pId,
+        def: fDef
+      })
+
+    },
+    get(key: string) {
+      if (uniqueDefs.has(key)) {
+        const defs = records.get(key)
+        return {
+          type: 'unique',
+          ruleMergeMethods: {
+            isVisible: (rs) => rs.some(Boolean),
+            required: (rs) => rs.some(Boolean),
+            value: (rs) => rs[0],
+          },
+          def: {
+            ...defs[0],
+            rules: {
+              isVisible: defs.map((def) => def.rules.isVisible),
+              required: defs.map((def) => def.rules.required),
+              value: defs.map((def) => def.rules.value),
+            }
+          }
+        }
       }
     }
-  }
-}
-const createFieldRegister = () => {
-  const registry = new Map()
-  return {
-    add(fDef: FieldDefinition) {
-      const fieldKey = fDef.key
-      if (!registry.has(fieldKey)) {
-        const fieldDefManager = createFieldDefManager()
-        fieldDefManager.add(fDef)
-        registry.set(fieldKey, fieldDefManager)
-      } else {
-        const fieldDefManager = registry.get(fieldKey)
-        fieldDefManager.add(fDef)
-      }
-    },
   }
 }
 
