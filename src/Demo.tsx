@@ -1,6 +1,8 @@
 import { ReactElement, ReactNode } from "react"
 
-type Logic = object | boolean | string | number | Logic[]
+
+type Logic = object | boolean | string | number | ((...args: unknown[]) => unknown) | Logic[]
+
 type FieldDefinition = {
   key: string,
   unique: boolean, // context indenpendent
@@ -11,228 +13,133 @@ type FieldDefinition = {
     required: Logic,
     value: Logic
   }>
-  page: string,
-  pageSlot: string,
 }
 
-/**
- *  For creating field definitions. This is important because some properties like 'unique' should not be
- *  modified during the creation.
- */
-type MetaFieldDefinition = {
-  key: string,
-  unique: boolean,
-  inputType: 'text' | 'number' | 'radiogroup' | 'checkbox',
-  rules: undefined | object,
+interface RegisterMember {
+    factory: Function;
+    singleton: boolean;
+    instance?: {};
 }
 
-/**
- * 1. unqiue field, rule props need to be merged among all contexts, only one value possible.
- * 2. non-unique field,  rule props and value varies in different context.
- * 3. field with same key can appear in different pages, or appear multiple times in the same page.
- */
-const demoFieldDef1: FieldDefinition = {
-  key: 'demo-field-1',
-  unique: true,
-  inputType: 'text',
-  rules: {
-    isVisible: true,
-    required: true,
-  },
-  page: 'demo-page-1',
-  pageSlot: 'main/section-key-1',
+interface iClass<T> {
+  new(...args: unknown[]): T
 }
 
-const demoFieldDef2: FieldDefinition = {
-  key: 'demo-field-2',
-  unique: true,
-  inputType: 'text',
-  rules: {
-    isVisible: true,
-    required: {
-      "if": [
-        { "===": [{ var: "demo-field-1" }, "target"] },
-        true,
-        false
-      ]
+class Register {
+    private container: Map<string, RegisterMember>;
+
+    constructor() {
+        this.container = new Map<string, RegisterMember>();
     }
-  },
-  page: 'demo-page-1',
-  pageSlot: 'main/section-key-1',
-}
-const demoFieldDef3: FieldDefinition = {
-  key: 'demo-field-3',
-  unique: false,
-  inputType: 'text',
-  rules: {
-    isVisible: true
-  },
-  page: 'demo-page-2',
-  pageSlot: 'main/section-key-1',
-}
 
+    bind<T>(key: string, fn: iClass<T>){
+      const factory = () => new fn()
+      this.container.set(key, {factory, singleton: true})
+    }
 
-const demoFieldDef4: FieldDefinition = {
-  key: 'demo-field-1',
-  unique: true,
-  inputType: 'text',
-  rules: {
-    isVisible: true,
-    required: false
-  },
-  page: 'demo-page-1',
-  pageSlot: 'main/section-key-1',
-}
-const demoFieldDef5: FieldDefinition = {
-  key: 'demo-field-3',
-  unique: false,
-  inputType: 'text',
-  rules: {
-    isVisible: true,
-    required: true,
-  },
-  page: 'demo-page-2',
-  pageSlot: 'main/section-key-1',
-}
-
-const productTypeA = {
-  tags: ['UE', 'DFO'],
-  displayName: 'PT-1',
-  fieldDefs: [
-    demoFieldDef1,
-    demoFieldDef2,
-    demoFieldDef3,
-  ]
-}
-
-const productTypeB = {
-  tags: ['UE', 'AFO'],
-  displayName: 'PT-2',
-  fieldDefs: [
-    demoFieldDef4,
-    demoFieldDef5,
-  ]
-}
-
-const v2ProductType1 = {
-  tags: ['UE', 'DFO'],
-  displayName: 'DFO',
-  pages: ['demo-page-key-1', 'demo-page-key-2'],
-  pageFields: {
-    'demo-page-key-1/section-key-1': ['demo-field-1', 'demo-field-2'],
-    'demo-page-key-2/section-key-1': ['demo-field-3'],
-  },
-  fields: [
-    demoFieldDef1,
-    demoFieldDef2,
-    demoFieldDef3,
-  ]
-}
-
-const v2ProductType2 = {
-  tags: ['UE', 'AFO'],
-  displayName: 'AFO',
-  pages: ['demo-page-key-1', 'demo-page-key-2', 'demo-page-key-3'],
-  pageFields: {
-    'demo-page-key-1/section-key-1': ['demo-field-1', 'demo-field-2'],
-    'demo-page-key-2/section-key-1': ['demo-field-4'],
-  },
-  fields: [
-    demoFieldDef1,
-    demoFieldDef2,
-    demoFieldDef3,
-  ]
-}
-
-const v3ProductType = {
-  tags: ['UE', 'AFO'],
-  displayName: 'AFO',
-  dir: 'ot/ue',
-  pages: ['demo-page-key-1', 'demo-page-key-2', 'demo-page-key-3'], // fields are pre-defined in each page
-  fieldRules: {
-    demoFieldDef1: {
-      isVisible: true
-    },
-    demoFieldDef2: {
-      required: { "if": [{ "===": [{ "var": "field-1" }, "target"] }, true, false] }
-    },
-    demoFieldDef3: {},
-  }
-}
-
-type PageContent = ReactElement | ReactElement
-type LayoutDescriptor = any
-
-type PageSection = {
-  key: string,
-  displayName: string,
-  layout: LayoutDescriptor,
-  content: PageContent
-}
-
-type PageMain = {
-  key: string,
-  displayName: string,
-  layout: LayoutDescriptor,
-  sections: PageSection[]
-}
-
-type PageRegisterEntry = {
-  path: string, // 'main/section-key-1/ 
-  content: PageContent,
-}
-
-const createPageRegister = () => {
-  const registry = new Map()
-
-  return {
-    add(entry: PageRegisterEntry) { },
-    getAll() { },
-  }
-}
-
-
-const createFieldRegister = () => {
-  const records = new Map()
-  const uniqueDefs = new Set()
-  return {
-    add(fDef: FieldDefinition, pId: string) {
-      const key = fDef.key
-      if (!records.has(key)) {
-        records.set(key, [])
-        if (fDef.unique) {
-          uniqueDefs.add(key)
-        }
-      }
-      records.get(key).push({
-        pId,
-        def: fDef
-      })
-
-    },
-    get(key: string) {
-      if (uniqueDefs.has(key)) {
-        const defs = records.get(key)
-        return {
-          type: 'unique',
-          ruleMergeMethods: {
-            isVisible: (rs) => rs.some(Boolean),
-            required: (rs) => rs.some(Boolean),
-            value: (rs) => rs[0],
-          },
-          def: {
-            ...defs[0],
-            rules: {
-              isVisible: defs.map((def) => def.rules.isVisible),
-              required: defs.map((def) => def.rules.required),
-              value: defs.map((def) => def.rules.value),
-            }
+    use(namespace: string) {
+      const item = this.container.get(namespace);
+      if (item !== undefined) {
+          if (item.singleton && !item.instance) {
+            item.instance = item.factory();
           }
+          return item.singleton ? item.instance : item.factory();
+        } else {
+          throw new Error('Factory method not found');
         }
-      }
+    }
+}
+
+
+
+class Field {
+  key: string;
+
+  fieldValue: FieldValue;
+
+  context: TheContext;
+
+  // rules: FieldRule[];
+  rules: Rule[];
+
+  hidden: boolean;
+
+  constructor({context, key, fieldValue, rules}: {context: Field['context'], key: Field['key'], fieldValue: Field['fieldValue'], rules: Field['rules']}) {
+    this.context = context;
+    this.key = key;
+    this.fieldValue = fieldValue;
+    this.rules = rules
+    this.hidden = false
+  }
+
+  set value(v: FieldValue) {
+    this.fieldValue = v
+    this.context.broadcastChange(this.key, this.fieldValue)
+  }
+  
+}
+
+class TheContext {
+  id: string;
+
+  members: Field[]
+
+  memberKeys: Set<string>
+
+  constructor(id: string){
+    this.id = id;
+    this.members = []
+    this.memberKeys = new Set()
+  }
+
+  broadcastChange(k: string, v: FieldValue){}
+
+  includeMember(f: FieldDefinition){
+    if (!this.memberKeys.has(f.key)) {
+      this.members.push(new Field(f))
+    } else {
+      const existingField = this.members.find((field) => field.key === f.key) 
+      if (existingField.unique) {}
+      console.log("Key %s already exists.", f.key)
+    }
+  } 
+
+  excludeMember(k: string){
+    if (this.memberKeys.has(k)) {
+      this.members = this.members.filter((m) => m.key !== k)
+    } else {
+      console.log("%s does not exist in the context", k)
     }
   }
+
+  init(){} 
 }
+
+type RuleType = 'valueValidation' | 'onFieldChange' | 'onFieldFocus' | 'visibility' | 'onBroadcast'
+
+type FieldRule = {
+  type: RuleType,
+  symbol: string, /** symbol to display when rule is applied, for example an asterisk "*" when the rule makes the field "required" */
+  priority: number, /** priority when two rules have conflict */
+  activation: Logic,
+  action: Logic
+}
+
+type Rule = {
+  isVisible: Logic,
+  calculateValue: Logic,
+  required: Logic,
+  hiddenOptions: string[] | number[],
+}
+
+type FieldValue = string | number | boolean | null | undefined | string[] | number[] | boolean[]
+
+
+class RuleResolver {
+  
+}
+
+
 
 
 
