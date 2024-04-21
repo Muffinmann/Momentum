@@ -22,7 +22,7 @@ const FieldContext = () => {
   return (
     <StoreMapContext.Provider value={storeMap}>
       <div style={{borderLeft: 'solid',  padding: '0rem 1rem'}}>
-        <h1>Context</h1>
+        <h2>Context</h2>
         <div>
           <p>Modifiers</p>
           <div>Target Field: <select value={modifierSettingTarget} onChange={(e) => setModifierSettingTarget(e.target.value)}>{Object.keys(storeMap).map((k) => (<option key={k} value={k}>{k}</option>))}</select></div>

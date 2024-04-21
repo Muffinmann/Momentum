@@ -26,33 +26,34 @@ const createDefaultModifiers = () => ({
 })
 
 
-type Factable = {
-  value: Value
-}
+// type Factable = {
+//   value: Value
+// }
 
-class Fact {
-  v: Value | Factable
-  constructor(v: Value | Factable){
-    this.v = v
-  }
+// class Fact {
+//   v: Value | Factable
+//   constructor(v: Value | Factable){
+//     this.v = v
+//   }
 
-  get value(){
-    if (this.v !== null && typeof this.v === 'object' &&  'value' in this.v) {
-      return this.v.value
-    }
-   return this.v 
-  }
-}
+//   get value(){
+//     if (this.v !== null && typeof this.v === 'object' &&  'value' in this.v) {
+//       return this.v.value
+//     }
+//    return this.v 
+//   }
+// }
+
 // observe object change
-class FactsObserver {
-  facts: Fact[]
-  constructor(facts: Fact[]){
-    this.facts = facts
-  }
-  onChange(cb) {
+// class FactsObserver {
+//   facts: Fact[]
+//   constructor(facts: Fact[]){
+//     this.facts = facts
+//   }
+//   onChange(cb) {
     
-  }
-}
+//   }
+// }
 
 
 
@@ -71,13 +72,17 @@ class FactContext{
     })
   }
 }
+
+type AvailableModifiers = keyof FieldModifier['modifiers'];
+
 type Modifier = {
   tag: string,
   logic: Logic,
 }
 class FieldModifier {
   key: string
-  modifiers: {
+  modifiers: { // TODO support custom modifiers
+    // custom: Record<string, Modifier[]>
     isVisible: Modifier[]
     required: Modifier[];
     validation: Modifier[];
@@ -85,9 +90,11 @@ class FieldModifier {
     toolTip: Modifier[];
     value: Modifier[];
   }
-  listeners: ((m: FieldModifier['modifiers']) => void)[] = []
-  resolvedModifiers = {}
-  factMap = {}
+  listeners: ((m: FieldModifier['resolvedModifiers']) => void)[] = []
+  resolvedModifiers: {
+    [K in keyof FieldModifier['modifiers']]?: Value[]
+  } = {}
+  factMap: Record<string, Value> = {}
 
   constructor(key: string){
     this.key = key
@@ -105,15 +112,20 @@ class FieldModifier {
   refresh(){
     // refresh resolved modifiers according to fact context
     Object.entries(this.modifiers).forEach(([modifierName, members]) => {
-      this.resolvedModifiers[modifierName] = members.map((member) => {
-        console.log({member})
-        if (typeof member.logic === 'object' && 'var' in member.logic){
-          return this.factMap[member.logic.var]
+      // TODO logic for resolving
+      this.resolvedModifiers[modifierName as keyof FieldModifier['resolvedModifiers']] = members.map((member) => {
+        if (typeof member.logic === 'object') {
+          if( 'var' in member.logic){
+            const targetKey = member.logic.var as string
+            return this.factMap[targetKey]
+          }
+          if ('varMap' in member.logic){
+            const targetKey = member.logic.varMap as string
+            return String(this.factMap[targetKey]).concat('mapped')
+          }
         }
-        if (typeof member.logic === 'object' && 'varMap' in member.logic){
-          return String(this.factMap[member.logic.varMap]).concat('mapped')
-        }
-        return member.logic
+        
+        return member.logic as Value
       })
     })
   }
@@ -140,7 +152,7 @@ class FieldModifier {
     this.refresh()
     this.listeners.forEach((listener) => listener(this.resolvedModifiers))
   }
-  onChange(listener: (m: FieldModifier['modifiers']) => void){
+  onChange(listener: (m: FieldModifier['resolvedModifiers']) => void){
     this.listeners.push(listener)
   }
 }
@@ -154,21 +166,25 @@ class FieldController {
     this.key = props.key;
     this.model = props.model;
     this.modifier = props.modifier;
-    this.handleModifier(this.modifier.modifiers)
+    // this.handleModifier(this.modifier.modifiers)
     this.modifier.onChange(this.handleModifier.bind(this))
   }
 
-  handleModifier(m: FieldModifier['modifiers']) {
+  handleModifier(m: FieldModifier['resolvedModifiers']) {
     // update model according to modifiers
     // compare the resolved modifiers and decide whether to update the model or not?
     console.log('[FieldController] modifiers of %s updated to %o', this.key, m)
-    this.updateModel('isVisible', m.isVisible.length > 0 && m.isVisible.some(Boolean))
-    this.updateModel('required', m.required.length > 0 && m.required.some(Boolean))
-    if (m.value.length) {
+    if (m.isVisible?.length) {
+      this.updateModel('isVisible', m.isVisible.some(Boolean))
+    }
+    if (m.required?.length) {
+      this.updateModel('required', m.required.some(Boolean))
+    }
+    if (m.value?.length) {
       this.updateModel('value', m.value[m.value.length - 1])
     }
   }
-  updateModel(k: keyof FieldModel, v: FieldModel[keyof FieldModel]){
+  updateModel<K extends keyof FieldModel>(k: K, v: FieldModel[K]){
     // update the model prop value
     this.model[k] = v
   }
@@ -179,11 +195,11 @@ class FieldController {
 }
 
 
-const createFieldModel = (key: string): FieldModel => {
+const createFieldModel = (key: string, defaultValue?: Value): FieldModel => {
   return {
     key,
     type: "text",
-    value: null,
+    value: defaultValue || null,
     error:  null,
     isVisible: false,
     required: false,
@@ -200,9 +216,9 @@ class FieldStore {
   controller: FieldController
   modifier: FieldModifier
   snapShot: FieldModel
-  constructor(key: string) {
+  constructor(key: string, defaultValue?: Value) {
     this.key = key
-    this.model = createFieldModel(key)
+    this.model = createFieldModel(key, defaultValue)
     this.snapShot = this.model
     this.modifier = new FieldModifier(key)
     this.controller = new FieldController({key, model: this.model, modifier: this.modifier})
@@ -213,7 +229,6 @@ class FieldStore {
 
     this.model = new Proxy(this.model,{
       set(target, p, newValue, receiver) {  
-        console.log("set", {receiver, thisObj: this})
         if (Reflect.get(target, p, receiver) !== newValue) {
           console.log('[FieldModel] set %s with %s = %s', target.key, p, newValue)
           Reflect.set(target, p, newValue, receiver)
@@ -228,15 +243,15 @@ class FieldStore {
     this.controller.changeModel(this.model)
   }
 
-  updateModifierFact(from: string, v: any){
+  updateModifierFact(from: string, v: Value){
     this.modifier.handleFactChange(from, v)
     this.emitChange()
   }
-  addModifier(k: string, v: any, tag: string){
+  addModifier(k: AvailableModifiers, v: Logic, tag: string){
     this.modifier.addModifier(k, v, tag)
     this.emitChange()
   }
-  removeModifier(k: string, tag: any) {
+  removeModifier(k: AvailableModifiers, tag: string) {
     this.modifier.removeModifier(k, tag)
     this.emitChange()
   }
@@ -246,16 +261,13 @@ class FieldStore {
   }
 
   subscribe(listener: () => void) {
-    // console.log("subscribed!")
     this.listeners = [...this.listeners, listener];
     return () => {
-    // console.log("unsubscribed!")
       this.listeners = this.listeners.filter(l => l !== listener);
     };
   }
 
   getSnapshot() {
-    // console.log('get snap shot!', this.model)
     return this.snapShot
   }
   
