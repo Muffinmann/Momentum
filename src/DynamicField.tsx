@@ -2,8 +2,15 @@ import { useContext, useSyncExternalStore } from "react";
 import StoreMapContext from "./contexts";
 
 
-const useTestFieldStore = (key: string) => {
+const useStoreMapContext = () => {
   const storeMap = useContext(StoreMapContext)
+  if (!storeMap) {
+    throw new Error('useStoreMapContext should be called inside the context provider')
+  }
+  return storeMap
+}
+const useTestFieldStore = (key: string) => {
+  const storeMap = useStoreMapContext()
   const store = storeMap[key]
   const field = useSyncExternalStore(store.subscribe.bind(store), store.getSnapshot.bind(store))
   return {field, store}

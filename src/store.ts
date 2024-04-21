@@ -13,7 +13,7 @@ type FieldModel = {
   toolTip: string;
 }
 
-type Logic = object;
+type Logic = object | Value;
 
 
 const createDefaultModifiers = () => ({
@@ -114,7 +114,7 @@ class FieldModifier {
     Object.entries(this.modifiers).forEach(([modifierName, members]) => {
       // TODO logic for resolving
       this.resolvedModifiers[modifierName as keyof FieldModifier['resolvedModifiers']] = members.map((member) => {
-        if (typeof member.logic === 'object') {
+        if (typeof member.logic === 'object' && member.logic !== null) {
           if( 'var' in member.logic){
             const targetKey = member.logic.var as string
             return this.factMap[targetKey]
@@ -209,7 +209,7 @@ const createFieldModel = (key: string, defaultValue?: Value): FieldModel => {
   }
 }
 
-class FieldStore {
+export class FieldStore {
   key: string
   listeners: (() => void)[] = []
   model: FieldModel

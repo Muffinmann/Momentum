@@ -1,6 +1,6 @@
 import { createContext } from "react";
+import { FieldStore } from "./store";
 
-type FieldStore = object 
-const StoreMapContext = createContext<FieldStore | undefined>(undefined)
+const StoreMapContext = createContext<Record<string,FieldStore> | undefined>(undefined)
 
 export default StoreMapContext;
