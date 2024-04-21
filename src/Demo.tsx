@@ -1,5 +1,6 @@
 import { useState } from "react";
 import FieldContext from "./FieldContext";
+import MergedFieldContext from "./MergedFieldContext";
 
 
 const demoContexts = [
@@ -11,27 +12,33 @@ const demoContexts = [
 const Demo = () => {
   const [contextConfig, setContextConfig] = useState(Object.fromEntries(demoContexts.map((name) => [name, ''])))
   const [targetContext, setTargetContext] = useState('ctx1')
-  const [generateConfig, setGeneratedConfig] = useState<Record<string, object>>(Object.fromEntries(demoContexts.map((name) => [name, {}])))
+  const [generatedConfig, setGeneratedConfig] = useState<Record<string, object>>({})
 
-  console.log({generateConfig})
+  const [sessionId, setSessionId] = useState(0)
   const generateContextConfig = () => {
-    const text = contextConfig[targetContext]
-    try {
-      const parsed = JSON.parse(text)
-      setGeneratedConfig((old) => ({
-        ...old,
-        [targetContext]: parsed
-      }))
-    } catch(e) {
-      console.error(e)
-    }
+    const result = Object.fromEntries(Object.entries(contextConfig).filter((entry) => entry[1].length > 0).map(([name, configRawText]) => {
+      try {
+        const parsed = JSON.parse(configRawText)
+        return [name, parsed]
+      } catch(e) {
+        console.error(e)
+        return [name, {}]
+      }
+    }))
+    // console.log(result)
+    // const text = contextConfig[targetContext]
+    setGeneratedConfig(result)
   }
 
   const clearContextConfig = () => {
-    setGeneratedConfig((old) => ({
+    setGeneratedConfig((old) => {
+      return Object.fromEntries(Object.entries(old).filter(([name]) => name !== targetContext))
+    })
+    setContextConfig((old) => ({
       ...old,
-      [targetContext]: {}
+      [targetContext]: ''
     }))
+    setSessionId((old) => old+1)
   }
   return (
     <div>
@@ -56,9 +63,10 @@ const Demo = () => {
         }}/>
       </div>
       <div style={{display: 'grid', gap: '2rem', gridTemplateColumns: '1fr 1fr 1fr'}}>
-        {demoContexts.map((context) => (
-          Object.keys(generateConfig[context]).length ? (<FieldContext key={context} config={generateConfig[context]} />) : null  
+        {Object.values(generatedConfig).map((contextConfig, i) => (
+           (<FieldContext key={String(sessionId).concat(Object.keys(generatedConfig)[i] || String(i))} config={contextConfig} />)
         ))}
+        {Object.keys(generatedConfig).length ? <MergedFieldContext contextConfigs={Object.values(generatedConfig)} /> : null}
       </div>
     </div>
   )

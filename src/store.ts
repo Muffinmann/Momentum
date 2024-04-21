@@ -273,7 +273,6 @@ export class FieldStore {
   }
   
   emitChange() {
-    console.log("emit change:", this.model)
     this.snapShot = {...this.model}
     for (const listener of this.listeners) {
       listener()
@@ -301,21 +300,42 @@ export const createStoreMap = (config: StoreMapConfig) => {
   }
   Object.values(fieldStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
 
-  // TODO load fields dynamically
-  // const demoStoreMap: Record<string, FieldStore> = {
-  //   'test-field-1': new FieldStore('test-field-1'),
-  //   'test-field-2': new FieldStore('test-field-2'),
-  //   'test-field-3': new FieldStore('test-field-3'),
-  // }
-
-
-  // Object.values(demoStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
-  // TODO initialize context specified field modifiers
-  // e.g.
-  // {'test-field-1': {value: {'+': [{var: 'test-field-2'}, 100]}}}
-
   return {
     storeMap: fieldStoreMap,
     keys: Object.keys(fieldStoreMap)
+  }
+}
+
+// combine modifiers of stores with same keys
+const mergeStoreModifiers = (store1: FieldStore, store2: FieldStore) => {
+  Object.entries(store2.modifier.modifiers).forEach(([name, ms]) => {
+    ms.forEach((m) => {
+      store1.addModifier(name as AvailableModifiers, m.logic, m.tag)
+    })
+  })
+  return store1
+}
+
+export const mergeStoreMap = (storeMap1: Record<string, FieldStore>, storeMap2: Record<string, FieldStore>) => {
+  const newMap = {...storeMap1}
+  Object.entries(storeMap2).forEach(([fKey, store]) => {
+    if (fKey in newMap){
+      mergeStoreModifiers(newMap[fKey], store)
+    } else {
+      newMap[fKey] = store
+    }
+  })
+
+  return newMap
+}
+
+export const reduceStoreMaps = (storeMaps: Record<string, FieldStore>[]) => {
+  const finalMap = storeMaps.reduce((prev, crr) => mergeStoreMap(prev, crr))
+  const factContext = new FactContext()
+
+  Object.values(finalMap).forEach((store) => store.bindFactContext(factContext))
+  return {
+    storeMap: finalMap,
+    keys: Object.keys(finalMap)
   }
 }

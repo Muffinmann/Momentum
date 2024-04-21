@@ -1,12 +1,12 @@
 import { useId, useMemo, useRef, useState } from "react";
 import DynamicField from "./DynamicField";
 import RadioInput from "./RadioInput";
-import { createStoreMap } from "./store";
 import StoreMapContext from "./contexts";
+import { createStoreMap, reduceStoreMaps } from "./store";
 
 
-const FieldContext = ({config}: {config: Record<string, object>}) => {
-  const {storeMap, keys} = useRef(createStoreMap(config)).current
+const MergedFieldContext = ({contextConfigs}: {contextConfigs: Record<string, object>[]}) => {
+  const {storeMap, keys} = useRef(reduceStoreMaps(contextConfigs.map((config) => createStoreMap(config).storeMap))).current
   const id = useId()
 
   const [valueModifierTarget, setValueModifierTarget] = useState(keys?.[0] || '')
@@ -22,7 +22,7 @@ const FieldContext = ({config}: {config: Record<string, object>}) => {
   return (
     <StoreMapContext.Provider value={storeMap}>
       <div style={{borderLeft: 'solid',  padding: '0rem 1rem'}}>
-        <h2>Context</h2>
+        <h2>Merged Context</h2>
         <div>
           <p>Modifiers</p>
           <div>Target Field: <select value={modifierSettingTarget} onChange={(e) => setModifierSettingTarget(e.target.value)}>{Object.keys(storeMap).map((k) => (<option key={k} value={k}>{k}</option>))}</select></div>
@@ -108,4 +108,4 @@ const FieldContext = ({config}: {config: Record<string, object>}) => {
     </StoreMapContext.Provider>
   )
 };
-export default FieldContext;
+export default MergedFieldContext;
