@@ -5,8 +5,8 @@ import { createStoreMap } from "./store";
 import StoreMapContext from "./contexts";
 
 
-const FieldContext = () => {
-  const {storeMap, keys} = useRef(createStoreMap()).current
+const FieldContext = ({config}: {config: Record<string, object>}) => {
+  const {storeMap, keys} = useRef(createStoreMap(config)).current
   const id = useId()
 
   const [valueModifierTarget, setValueModifierTarget] = useState('test-field-1')
@@ -101,9 +101,9 @@ const FieldContext = () => {
             </select>
           </pre>
         </div>
-        <DynamicField fieldKey="test-field-1" />
-        <DynamicField fieldKey="test-field-2" />
-        <DynamicField fieldKey="test-field-3" />
+        {keys.map((key) => (
+          <DynamicField key={key} fieldKey={key} />
+        ))}
       </div>
     </StoreMapContext.Provider>
   )

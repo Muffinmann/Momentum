@@ -247,6 +247,7 @@ export class FieldStore {
     this.modifier.handleFactChange(from, v)
     this.emitChange()
   }
+
   addModifier(k: AvailableModifiers, v: Logic, tag: string){
     this.modifier.addModifier(k, v, tag)
     this.emitChange()
@@ -281,26 +282,40 @@ export class FieldStore {
 }
 
 
+type StoreMapConfig = {
+  [fieldKey: string]: {
+    [K in AvailableModifiers]: Logic[]
+  }
+}
 
-export const createStoreMap = () => {
-
+export const createStoreMap = (config: StoreMapConfig) => {
   const storeFactContext = new FactContext()
+  const fieldKeys = Object.keys(config)
+  const fieldStoreMap = Object.fromEntries(fieldKeys.map((key) => [key, new FieldStore(key)]))
+  for (const fieldKey of fieldKeys) {
+    const modifier = config[fieldKey]
+    const store = fieldStoreMap[fieldKey]
+    Object.entries(modifier).forEach(([name, m]) => {
+      store.addModifier(name as AvailableModifiers, m, 'ctxTag')
+    })
+  }
+  Object.values(fieldStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
 
   // TODO load fields dynamically
-  const demoStoreMap: Record<string, FieldStore> = {
-    'test-field-1': new FieldStore('test-field-1'),
-    'test-field-2': new FieldStore('test-field-2'),
-    'test-field-3': new FieldStore('test-field-3'),
-  }
+  // const demoStoreMap: Record<string, FieldStore> = {
+  //   'test-field-1': new FieldStore('test-field-1'),
+  //   'test-field-2': new FieldStore('test-field-2'),
+  //   'test-field-3': new FieldStore('test-field-3'),
+  // }
 
 
-  Object.values(demoStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
+  // Object.values(demoStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
   // TODO initialize context specified field modifiers
   // e.g.
   // {'test-field-1': {value: {'+': [{var: 'test-field-2'}, 100]}}}
 
   return {
-    storeMap: demoStoreMap,
-    keys: Object.keys(demoStoreMap)
+    storeMap: fieldStoreMap,
+    keys: Object.keys(fieldStoreMap)
   }
 }
