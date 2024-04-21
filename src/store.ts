@@ -179,20 +179,6 @@ class FieldController {
 }
 
 
-type Field = {
-  key: string;
-  value: FieldValue;
-  error: FieldError | null;
-  isVisible: boolean;
-  required: boolean;
-  validation: string;
-  colorTheme: string;
-  toolTip: string;
-}
-
-
-const factContext = new FactContext()
-
 const createFieldModel = (key: string): FieldModel => {
   return {
     key,
@@ -284,13 +270,25 @@ class FieldStore {
 
 
 
-const storeMap: Record<string, FieldStore> = {
-  'test-field-1': new FieldStore('test-field-1'),
-  'test-field-2': new FieldStore('test-field-2'),
-  'test-field-3': new FieldStore('test-field-3'),
+export const createStoreMap = () => {
+
+  const storeFactContext = new FactContext()
+
+  // TODO load fields dynamically
+  const demoStoreMap: Record<string, FieldStore> = {
+    'test-field-1': new FieldStore('test-field-1'),
+    'test-field-2': new FieldStore('test-field-2'),
+    'test-field-3': new FieldStore('test-field-3'),
+  }
+
+
+  Object.values(demoStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
+  // TODO initialize context specified field modifiers
+  // e.g.
+  // {'test-field-1': {value: {'+': [{var: 'test-field-2'}, 100]}}}
+
+  return {
+    storeMap: demoStoreMap,
+    keys: Object.keys(demoStoreMap)
+  }
 }
-
-
-Object.values(storeMap).forEach((store) => store.bindFactContext(factContext))
-
-export default storeMap

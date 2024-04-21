@@ -1,8 +1,9 @@
-import { useSyncExternalStore } from "react";
-import storeMap from "./store";
+import { useContext, useSyncExternalStore } from "react";
+import StoreMapContext from "./contexts";
 
 
 const useTestFieldStore = (key: string) => {
+  const storeMap = useContext(StoreMapContext)
   const store = storeMap[key]
   const field = useSyncExternalStore(store.subscribe.bind(store), store.getSnapshot.bind(store))
   return {field, store}
