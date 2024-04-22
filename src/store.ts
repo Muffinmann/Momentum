@@ -96,9 +96,12 @@ class FieldModifier {
   } = {}
   factMap: Record<string, Value> = {}
 
-  constructor(key: string){
+  constructor(key: string, initFactMap?: Record<string, Value>){
     this.key = key
     this.modifiers = createDefaultModifiers()
+    if (initFactMap) {
+      this.factMap = initFactMap;
+    }
     // resolve by construction
     this.refresh()
   }
@@ -170,6 +173,8 @@ class FieldController {
     this.modifier.onChange(this.handleModifier.bind(this))
   }
 
+  // TODO: Modifiers should have priority to avoid conflict
+  // "localFirst", "globalFirst", "1", "2", "3", ...
   handleModifier(m: FieldModifier['resolvedModifiers']) {
     // update model according to modifiers
     // compare the resolved modifiers and decide whether to update the model or not?
