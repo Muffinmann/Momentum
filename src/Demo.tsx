@@ -12,7 +12,7 @@ const demoContexts = [
 const Demo = () => {
   const [contextConfig, setContextConfig] = useState(Object.fromEntries(demoContexts.map((name) => [name, ''])))
   const [targetContext, setTargetContext] = useState('ctx1')
-  const [generatedConfig, setGeneratedConfig] = useState<Record<string, object>>({})
+  const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>({})
 
   const [sessionId, setSessionId] = useState(0)
   const generateContextConfig = () => {
