@@ -127,6 +127,10 @@ class Modifier {
     return this.tag === t
   }
 
+  isDependentOn(key: string) {
+    return this.dependencies.includes(key)
+  }
+
 }
   // updateVariables(k: string, v: Value): void
   // updateVariables(k: Record<string, Value>): void
@@ -157,6 +161,7 @@ class FieldModifier {
     toolTip: Modifier[];
     value: Modifier[];
   }
+  existingModifiers: Modifier[] = []
   listeners: ((m: FieldModifier['resolvedModifiers']) => void)[] = []
   resolvedModifiers: {
     [K in keyof FieldModifier['modifiers']]?: Value[]
@@ -227,6 +232,74 @@ class FieldModifier {
   }
 }
 
+
+class FieldControllerV2 {
+  key: string;
+  model: FieldModel;
+
+  constructor(props: {key: string, model: FieldModel}){
+    this.key = props.key;
+    this.model = props.model;
+  }
+
+  // TODO: Modifiers should have priority to avoid conflict
+  // "localFirst", "globalFirst", "1", "2", "3", ...
+  handleModifierEvaluation(m: Modifier, result: Value) {
+
+  }
+
+  updateModel<K extends keyof FieldModel>(k: K, v: FieldModel[K]){
+    // update the model prop value
+    this.model[k] = v
+  }
+  changeModel(newModel: FieldModel) {
+    this.model = newModel
+  }
+
+}
+
+class FieldModifierV2 {
+  modifiers: Modifier[]
+  facts: Record<string, Value> = {}
+  controller: FieldControllerV2
+  // dependencies: Set<string>
+  constructor(initModifiers: Modifier[], controller: FieldControllerV2) {
+    this.modifiers = initModifiers
+    this.controller = controller
+    // this.facts = initFacts
+    // this.dependencies = new Set(this.modifiers.flatMap((mod) => mod.tellDependencies()))
+  }
+
+  tellDependencies() {
+    return Array.from(new Set(this.modifiers.flatMap((mod) => mod.tellDependencies())))
+  }
+
+  addMember(m: Modifier){
+    this.modifiers.push(m)
+    return () => this.removeMember(m) 
+  }
+
+  removeMember(m: Modifier) {
+    this.modifiers = this.modifiers.filter((mod) => mod !== m)
+  }
+
+  updateFact(k: string, v: Value) {
+    this.facts[k] = v
+  }
+  // only update modifier having corresponding dependency of initiator
+  listenFactChange(initiator: string, v: Value) {
+    if (this.tellDependencies().includes(initiator)) {
+      this.updateFact(initiator, v) 
+
+      for (const mod of this.modifiers) {
+        if (mod.isDependentOn(initiator)) {
+          mod.evaluate(this.facts)
+        }
+      }
+    }
+  }
+}
+
 class FieldController {
   key: string;
   modifier: FieldModifier;
@@ -292,7 +365,7 @@ export class FieldStore {
     this.key = key
     this.model = createFieldModel(key, defaultValue)
     this.snapShot = this.model
-    this.modifier = new FieldModifier(key)
+    this.modifier = new FieldModifier(key) // should take controller as arg
     this.controller = new FieldController({key, model: this.model, modifier: this.modifier})
   }
 
