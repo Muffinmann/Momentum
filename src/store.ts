@@ -73,12 +73,79 @@ class FactContext{
   }
 }
 
+// implementation
+class ControlFlow {
+  constructor() {}
+  evaluate(values: Record<string, Value>) {
+    console.log('Evaluateing with values: %o', values)
+    return null
+  }
+  tellDependencies(){
+    return []
+  }
+}
+
+// interface
+class ConditionalLogic {
+  controlFlow: ControlFlow
+  constructor(controlFlow: ControlFlow) {
+    this.controlFlow = controlFlow
+  }
+
+  evaluate(facts: Record<string, Value>) {
+    return this.controlFlow.evaluate(facts)
+  }
+  tellDependencies() {
+    return this.controlFlow.tellDependencies()
+  }
+}
+
+interface VariableContext {
+  returnValues(keys: string[]): Record<string, Value>
+  listenChange(cb:(initiator: string, v: Value)):void
+}
+
+class Modifier {
+  tag: string
+  logic: ConditionalLogic
+  dependencies: string[]
+  constructor(tag: string, logic: ConditionalLogic) {
+    this.tag = tag
+    this.logic = logic
+    this.dependencies = this.logic.tellDependencies() 
+  }
+
+  evaluate(values: Record<string, Value>){
+    return this.logic.evaluate(values)
+  }
+
+  tellDependencies() {
+    return this.dependencies
+  }
+
+  isTag(t: string){
+    return this.tag === t
+  }
+
+}
+  // updateVariables(k: string, v: Value): void
+  // updateVariables(k: Record<string, Value>): void
+  // updateVariables(k: string | Record<string, Value>, v?: Value) {
+  //   if (typeof k ==='object') {
+  //     this.variables = {
+  //       ...this.variables,
+  //       ...k
+  //     }
+  //   } else {
+  //     this.variables[k] = v || null
+  //   }
+  // }
 type AvailableModifiers = keyof FieldModifier['modifiers'];
 
-type Modifier = {
-  tag: string,
-  logic: Logic,
-}
+// type Modifier = {
+//   tag: string,
+//   logic: Logic,
+// }
 class FieldModifier {
   key: string
   modifiers: { // TODO support custom modifiers
