@@ -1,4 +1,4 @@
-import { useId, useState, useMemo } from "react";
+import { useId, useState, useMemo, FormEventHandler, FormEvent } from "react";
 import RadioInput from "./RadioInput";
 import { FieldStore } from "./core/store";
 import Modifier from "./core/Modifier";
@@ -19,6 +19,19 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
   }])))
 
   const store = useMemo(() => storeMap[modifierSettingTarget], [modifierSettingTarget, storeMap])
+  const handleSubmit: FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault() 
+    const data = new FormData(e.target as HTMLFormElement)
+    const dict =  Object.fromEntries(Array.from(data.entries()))
+    try {
+      const rules = JSON.parse((dict.ruleContent || '') as string)
+      Object.entries(rules).forEach(([name, rule]) => {
+        store.addModifier(new Modifier(name, rule), 'modifier'.concat(modifierSettingTarget,name), 1)
+      })
+    } catch(e) {
+      console.log('Something went wrong: %o', e)
+    }
+  }
   return (
     <div>
       <p>Modifiers</p>
@@ -97,6 +110,10 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
           ))}
         </select>
       </pre>
+      <form onSubmit={handleSubmit}>
+        <textarea name="ruleContent" rows={10} cols={50} />
+        <button>submit</button>
+      </form>
     </div>
   )
 };

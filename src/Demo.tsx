@@ -12,7 +12,16 @@ const demoContexts = [
 const Demo = () => {
   const [contextConfig, setContextConfig] = useState(Object.fromEntries(demoContexts.map((name) => [name, ''])))
   const [targetContext, setTargetContext] = useState('ctx1')
-  const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>({})
+  const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>({
+    'ctx1': {
+      'test-field-1': {
+        isVisible: true
+      },
+      'test-field-2': {
+        isVisible: false
+      },
+    }
+  })
 
   const [sessionId, setSessionId] = useState(0)
   const generateContextConfig = () => {
