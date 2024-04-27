@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { FieldStore } from "./store";
+import { FieldStore } from "./core/store";
 
 const StoreMapContext = createContext<Record<string,FieldStore> | undefined>(undefined)
 
