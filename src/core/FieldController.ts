@@ -43,6 +43,9 @@ class FieldController {
   changeModel(newModel: FieldModel) {
     this.model = newModel
   }
+  changeControlStrategy(newStrategy: ModifierControlStrategy) {
+    this.controlStrategy = newStrategy
+  }
 
 }
 

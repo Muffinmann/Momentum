@@ -38,6 +38,24 @@ simpleModifierControlStrategy
 .add('colorTheme', (mods) => mods[0].result)
 .add('toolTip', (mods) => mods[0].result)
 
+const priorityDescModifierControlStrategy = new ModifierControlStrategy()
+priorityDescModifierControlStrategy
+.add('isVisible', (mods) => mods[mods.length - 1].result)
+.add('required', (mods) => mods[mods.length - 1].result)
+.add('value', (mods) => mods[mods.length - 1].result)
+.add('validation', (mods) => mods[mods.length - 1].result)
+.add('colorTheme', (mods) => mods[mods.length - 1].result)
+.add('toolTip', (mods) => mods[mods.length - 1].result)
+
+const priorityAscModifierControlStrategy = new ModifierControlStrategy()
+priorityAscModifierControlStrategy
+.add('isVisible', (mods) => mods[0].result)
+.add('required', (mods) => mods[0].result)
+.add('value', (mods) => mods[0].result)
+.add('validation', (mods) => mods[0].result)
+.add('colorTheme', (mods) => mods[0].result)
+.add('toolTip', (mods) => mods[0].result)
+
 export class FieldStore {
   key: string
   listeners: (() => void)[] = []
@@ -106,6 +124,19 @@ export class FieldStore {
     this.snapShot = {...this.model}
     for (const listener of this.listeners) {
       listener()
+    }
+  }
+
+  changeControlStrategy(name: 'simple' | 'priorityAsc' | 'priorityDesc') {
+    if (name === 'simple') {
+      return
+    }
+    if (name === 'priorityAsc') {
+      this.controller.changeControlStrategy(priorityAscModifierControlStrategy)
+      return
+    }
+    if (name === 'priorityDesc') {
+      this.controller.changeControlStrategy(priorityDescModifierControlStrategy)
     }
   }
 }
