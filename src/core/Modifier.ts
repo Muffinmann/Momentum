@@ -4,9 +4,9 @@ import { Logic, collectDependencies, resolveLogic } from "./runtimeEngine"
 
 class Modifier {
   tag: FieldModelKeys
-  logic: Logic | Value
+  logic: Logic | Logic[] | Value
   dependencies: string[]
-  constructor(tag: FieldModelKeys, logic: Logic | Value) {
+  constructor(tag: FieldModelKeys, logic: Logic | Logic[] | Value) {
     this.tag = tag
     this.logic = logic
     this.dependencies = collectDependencies(logic)

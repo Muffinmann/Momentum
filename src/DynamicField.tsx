@@ -26,7 +26,8 @@ const DynamicField= ({fieldKey}: {fieldKey: string}) => {
       </pre>
       <div>
         <p>{fieldKey}{field.required && <span style={{color: 'red'}}>*</span>}</p>
-        {field.isVisible && <input name={field.key} value={(field.value || '') as string} onChange={(e) => store.updateValue(e.target.value)} />}
+        {field.toolTip ? <p>{field.toolTip}</p> : null}
+        {field.isVisible && <input style={{color: field.colorTheme}} name={field.key} value={(field.value || '') as string} onChange={(e) => store.updateValue(e.target.value)} />}
       </div>
       
     </div>

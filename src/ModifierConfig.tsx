@@ -3,6 +3,7 @@ import RadioInput from "./RadioInput";
 import { FieldStore } from "./core/store";
 import Modifier from "./core/Modifier";
 import { FieldModelKeys } from "./types";
+import { Logic } from "./core/runtimeEngine";
 
 const nameIsFieldModelKeys = (n: string): n is FieldModelKeys => {
   return  ['value', 'isVisible' ,'required' ,'validation' ,'colorTheme' ,'toolTip'].includes(n)
@@ -29,7 +30,7 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
       const rules = JSON.parse((dict.ruleContent || '') as string)
       Object.entries(rules).forEach(([name, rule]) => {
         if (nameIsFieldModelKeys(name)) {
-          store.addModifier(new Modifier(name, rule), 'modifier'.concat(modifierSettingTarget,name), modifierSettings[name].priority)
+          store.addModifier(new Modifier(name, rule as Logic), 'modifier'.concat(modifierSettingTarget,name), modifierSettings[modifierSettingTarget].priority)
         } else {
           setErr((old) => [...old, `"${name}" is not a valid modifier name`])
         }
@@ -42,26 +43,28 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
     <div>
       <p>Modifiers</p>
       <div>Target Field: <select value={modifierSettingTarget} onChange={(e) => setModifierSettingTarget(e.target.value)}>{Object.keys(storeMap).map((k) => (<option key={k} value={k}>{k}</option>))}</select></div>
-      <pre>
+      <div>
         strategy: <RadioInput 
         value={modifierSettings[modifierSettingTarget].strategy} 
         name={modifierSettingTarget.concat(id, "isVisibleSelection")}
         options={[
           {name: 'simple', value:'simple'},
-          {name:'priorityAsc', value:'priorityAsc'},
-          {name:'priorityDesc', value:'priorityDesc'},
+          {name:'priorityAsc(small first)', value:'priorityAsc'},
+          {name:'priorityDesc(big first)', value:'priorityDesc'},
         ]}
         onChange={(e) => {
+          const newStrategy = e.target.value as 'simple' | 'priorityAsc' | 'priorityDesc'
           setModifierSettings((old) => ({
             ...old,
             [modifierSettingTarget]: {
               ...old[modifierSettingTarget],
-              strategy: e.target.value as 'simple' | 'priorityAsc' | 'priorityDesc'
+              strategy: newStrategy
             }
           }))
+          store.changeControlStrategy(newStrategy)
         }} />
       
-      </pre>
+      </div>
       <pre>
         priority: <input
         type="number"
@@ -85,6 +88,7 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
         {err.length > 0 ? (
           err.map((e, i) => <li key={i}>{e}</li>)
         ) : null}
+        {err.length ? <button onClick={() => setErr([])}>clear error</button> : null}
       </ul>
     </div>
   )
