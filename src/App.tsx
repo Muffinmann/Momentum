@@ -1,15 +1,28 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import Demo from './Demo'
+import DemoModifier from './DemoModifier'
+import RadioInput from './RadioInput'
+import DemoPageCreation from './DemoPageCreation'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentDemo, setCurrentDemo] = useState('modifier')
 
   return (
     <div>
-      <Demo />
+        <RadioInput
+          name="demoSelection"
+          value={currentDemo}
+          options={[
+            {name: 'modifier', value: 'modifier'},
+            {name: 'pageCreation', value: 'pageCreation'},
+          ]}
+          onChange={(e) => setCurrentDemo(e.target.value)} />
+      {
+        currentDemo === 'modifier' ? <DemoModifier /> : null
+      }
+      {
+        currentDemo === 'pageCreation' ? <DemoPageCreation /> : null
+      }
     </div>
   )
 }

@@ -9,10 +9,7 @@ const demoContexts = [
   'ctx3',
 ]
 
-const Demo = () => {
-  const [contextConfig, setContextConfig] = useState(Object.fromEntries(demoContexts.map((name) => [name, ''])))
-  const [targetContext, setTargetContext] = useState('ctx1')
-  const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>({
+const defaultCtxConfig: Record<string, Record<string, object>> = {
     'ctx1': {
       'test-field-1': {
         isVisible: true
@@ -21,7 +18,11 @@ const Demo = () => {
         isVisible: false
       },
     }
-  })
+  }
+const Demo = () => {
+  const [contextConfig, setContextConfig] = useState(Object.fromEntries(demoContexts.map((name) => [name, JSON.stringify(defaultCtxConfig[name] || '', null, 2)])))
+  const [targetContext, setTargetContext] = useState('ctx1')
+  const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>(defaultCtxConfig)
 
   const [sessionId, setSessionId] = useState(0)
   const generateContextConfig = () => {
