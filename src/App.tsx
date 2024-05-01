@@ -8,7 +8,7 @@ function App() {
   const [currentDemo, setCurrentDemo] = useState('modifier')
 
   return (
-    <div>
+    <div className='main'>
         <RadioInput
           name="demoSelection"
           value={currentDemo}
