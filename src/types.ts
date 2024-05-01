@@ -1,3 +1,4 @@
+import { Logic } from "./core/runtimeEngine";
 
 export type Value = string | number | boolean | string[] | number[] | boolean[] | null;
 export type FieldValue = string | number | boolean | string[] | number[] | boolean[] | null;
@@ -23,4 +24,11 @@ export type SettledModifier = {
   result: Value
   priority: number
 }
+export type StoreMapConfig = {
+  [fieldKey: string]: {
+    [K in AvailableModifiers]: Logic[]
+  }
+}
+
+
 

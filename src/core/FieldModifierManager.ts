@@ -197,7 +197,7 @@ class FieldModifierManager {
   refresh() {
     const settledModifiers: Record<string, SettledModifier[]> = {}
       for (const mod of this.modifiers) {
-        const result = mod.modifier.evaluate(this.facts)
+        const result = mod.modifier.evaluate(this.facts) as Value
         const modTag = mod.modifier.tag
         if (!(modTag in settledModifiers)) {
           settledModifiers[modTag] = []

@@ -3,15 +3,7 @@ import FieldController from "./FieldController";
 import FieldModifierManager from "./FieldModifierManager";
 import Modifier from "./Modifier";
 import ModifierControlStrategy from "./ModifierControlStrategy";
-import { Logic} from "./runtimeEngine";
-import { AvailableModifiers, Value, FieldModel, FieldModelKeys } from "../types";
-
-
-type StoreMapConfig = {
-  [fieldKey: string]: {
-    [K in AvailableModifiers]: Logic[]
-  }
-}
+import { Value, FieldModel, FieldModelKeys, StoreMapConfig } from "../types";
 
 
 const createFieldModel = (key: string, defaultValue?: Value): FieldModel => {
@@ -138,13 +130,14 @@ export class FieldStore {
     if (name === 'priorityDesc') {
       this.controller.changeControlStrategy(priorityDescModifierControlStrategy)
     }
+    this.emitChange()
   }
 }
 
 
 
 
-export const createStoreMap = (config: StoreMapConfig) => {
+export const createStoreMap = (config: StoreMapConfig, options?: {modifierPriority?: number}) => {
   const storeFactContext = new FactContext()
   const fieldKeys = Object.keys(config)
   const fieldStoreMap = Object.fromEntries(fieldKeys.map((key) => [key, new FieldStore(key)]))
@@ -155,12 +148,11 @@ export const createStoreMap = (config: StoreMapConfig) => {
       // name: 'isVisible', 'required', ...
 
       const mod = new Modifier(name as FieldModelKeys, m)
-      store.addModifier(mod, fieldKey.concat(name), 0)
+      store.addModifier(mod, fieldKey.concat(name), options?.modifierPriority || 0)
     })
   }
   Object.values(fieldStoreMap).forEach((store) => store.bindFactContext(storeFactContext))
 
-  console.log({config, fieldStoreMap})
   return {
     storeMap: fieldStoreMap,
     keys: Object.keys(fieldStoreMap)

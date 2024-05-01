@@ -16,8 +16,6 @@ class FieldController {
     this.modifierManager.onRefresh(this.handleModifierEvaluation.bind(this)) 
   }
 
-  // TODO: Modifiers should have priority to avoid conflict
-  // "localFirst", "globalFirst", "1", "2", "3", ...
   handleModifierEvaluation(mods: Record<FieldModelKeys, SettledModifier[]>) {
     Object.entries(mods).forEach(([t, mods]) => {
       const tag = t as FieldModelKeys
@@ -45,6 +43,7 @@ class FieldController {
   }
   changeControlStrategy(newStrategy: ModifierControlStrategy) {
     this.controlStrategy = newStrategy
+    this.modifierManager.refresh()
   }
 
 }
