@@ -48,6 +48,7 @@ priorityAscModifierControlStrategy
 .add('colorTheme', (mods) => mods[0].result)
 .add('toolTip', (mods) => mods[0].result)
 
+// TODO: value persistance
 export class FieldStore {
   key: string
   listeners: (() => void)[] = []
@@ -135,15 +136,19 @@ export class FieldStore {
 }
 
 
-
+const singletonMap = new Map<string, FieldStore | null>([['test-field-1', null]])
 
 export const createStoreMap = (config: StoreMapConfig, options?: {modifierPriority?: number}) => {
   const storeFactContext = new FactContext()
   const fieldKeys = Object.keys(config)
-  const fieldStoreMap = Object.fromEntries(fieldKeys.map((key) => [key, new FieldStore(key)]))
-  for (const fieldKey of fieldKeys) {
+  const fieldStoreMap = Object.fromEntries(fieldKeys.map((key) => [key, singletonMap.get(key) || new FieldStore(key)]))
+  const filteredKeys = fieldKeys.filter((k) => !singletonMap.get(k))
+  for (const fieldKey of filteredKeys) {
     const modifier = config[fieldKey]
     const store = fieldStoreMap[fieldKey]
+    if (singletonMap.has(fieldKey) && !singletonMap.get(fieldKey)) {
+      singletonMap.set(fieldKey, store)
+    }
     Object.entries(modifier).forEach(([name, m]) => {
       // name: 'isVisible', 'required', ...
 
@@ -171,6 +176,9 @@ const mergeStoreModifiers = (store1: FieldStore, store2: FieldStore) => {
 export const mergeStoreMap = (storeMap1: Record<string, FieldStore>, storeMap2: Record<string, FieldStore>) => {
   const newMap = {...storeMap1}
   Object.entries(storeMap2).forEach(([fKey, store]) => {
+    if (singletonMap.get(fKey) && fKey in newMap) {
+      return
+    }
     if (fKey in newMap){
       mergeStoreModifiers(newMap[fKey], store)
     } else {
