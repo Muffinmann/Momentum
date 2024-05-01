@@ -73,7 +73,7 @@ const Demo = () => {
         {Object.entries(generatedConfig).map(([ctxName, contextConfig], i) => (
            (contextConfig ? <FieldContext key={ctxName.concat(String(i))} name={ctxName} config={contextConfig as StoreMapConfig} /> : null)
         ))}
-        {Object.keys(generatedConfig).length > 1 ? <MergedFieldContext contextConfigs={Object.values(generatedConfig).filter(Boolean) as StoreMapConfig[]} /> : null}
+        {Object.values(generatedConfig).filter(Boolean).length > 1 ? <MergedFieldContext contextConfigs={Object.values(generatedConfig).filter(Boolean) as StoreMapConfig[]} /> : null}
       </div>
     </div>
   )
