@@ -164,6 +164,7 @@ const mergeStoreModifiers = (store1: FieldStore, store2: FieldStore) => {
   store2.modifierManager.members.forEach((m) => {
       store1.modifierManager.addMember(m.modifier, m.key, m.priority)
   })
+  store1.emitChange()
   return store1
 }
 
