@@ -84,8 +84,10 @@ export class FieldStore {
   }
 
   updateModifierFact(from: string, v: Value){
-    this.modifierManager.listenFactChange(from, v)
-    this.emitChange()
+    const modifierUpdated = this.modifierManager.listenFactChange(from, v)
+    if (modifierUpdated) {
+      this.emitChange()
+    }
   }
 
   addModifier(m: Modifier, key: string, priority: number = 0){

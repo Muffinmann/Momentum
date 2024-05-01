@@ -191,7 +191,9 @@ class FieldModifierManager {
     if (this.tellDependencies().includes(initiator)) {
       this.updateFact(initiator, v) 
       this.refresh()
+      return true
     }
+    return false
   }
 
   refresh() {
