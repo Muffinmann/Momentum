@@ -1,6 +1,7 @@
 import { useState } from "react";
 import FieldContext from "./FieldContext";
 import MergedFieldContext from "./MergedFieldContext";
+import { StoreMapConfig } from "./types";
 
 
 const demoContexts = [
@@ -24,7 +25,6 @@ const Demo = () => {
   const [targetContext, setTargetContext] = useState('ctx1')
   const [generatedConfig, setGeneratedConfig] = useState<Record<string, Record<string, object>>>(defaultCtxConfig)
 
-  const [sessionId, setSessionId] = useState(0)
   const generateContextConfig = () => {
     const result = Object.fromEntries(Object.entries(contextConfig).filter((entry) => entry[1].length > 0).map(([name, configRawText]) => {
       try {
@@ -35,8 +35,6 @@ const Demo = () => {
         return [name, {}]
       }
     }))
-    // console.log(result)
-    // const text = contextConfig[targetContext]
     setGeneratedConfig(result)
   }
 
@@ -48,7 +46,6 @@ const Demo = () => {
       ...old,
       [targetContext]: ''
     }))
-    setSessionId((old) => old+1)
   }
   return (
     <div>
@@ -73,10 +70,10 @@ const Demo = () => {
         }}/>
       </div>
       <div style={{display: 'grid', gap: '2rem', gridTemplateColumns: '1fr 1fr 1fr'}}>
-        {Object.values(generatedConfig).map((contextConfig, i) => (
-           (<FieldContext key={String(sessionId).concat(Object.keys(generatedConfig)[i] || String(i))} config={contextConfig} />)
+        {Object.entries(generatedConfig).map(([ctxName, contextConfig], i) => (
+           (contextConfig ? <FieldContext key={ctxName.concat(String(i))} name={ctxName} config={contextConfig as StoreMapConfig} /> : null)
         ))}
-        {Object.keys(generatedConfig).length ? <MergedFieldContext contextConfigs={Object.values(generatedConfig)} /> : null}
+        {Object.keys(generatedConfig).length > 1 ? <MergedFieldContext contextConfigs={Object.values(generatedConfig).filter(Boolean) as StoreMapConfig[]} /> : null}
       </div>
     </div>
   )

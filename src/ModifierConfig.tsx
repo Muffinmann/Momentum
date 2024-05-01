@@ -41,7 +41,7 @@ const ModifierConfig = ({storeMap}: {storeMap: Record<string, FieldStore>}) => {
   }
   return (
     <div>
-      <p>Modifiers</p>
+      <h5>Field Modifiers</h5>
       <div>Target Field: <select value={modifierSettingTarget} onChange={(e) => setModifierSettingTarget(e.target.value)}>{Object.keys(storeMap).map((k) => (<option key={k} value={k}>{k}</option>))}</select></div>
       <div>
         strategy: <RadioInput 

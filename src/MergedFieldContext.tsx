@@ -1,12 +1,13 @@
-import { useRef, } from "react";
+import { useMemo } from "react";
 import DynamicField from "./DynamicField";
 import StoreMapContext from "./contexts";
 import { createStoreMap, reduceStoreMaps } from "./core/store";
 import ModifierConfig from "./ModifierConfig";
+import { StoreMapConfig } from "./types";
 
 
-const MergedFieldContext = ({contextConfigs}: {contextConfigs: Record<string, object>[]}) => {
-  const {storeMap, keys} = useRef(reduceStoreMaps(contextConfigs.map((config) => createStoreMap(config).storeMap))).current
+const MergedFieldContext = ({contextConfigs}: {contextConfigs: StoreMapConfig[]}) => {
+  const {storeMap, keys} = useMemo(() => reduceStoreMaps(contextConfigs.map((config) => createStoreMap(config).storeMap)), [contextConfigs])
   return (
     <StoreMapContext.Provider value={storeMap}>
       <div style={{borderLeft: 'solid',  padding: '0rem 1rem'}}>
