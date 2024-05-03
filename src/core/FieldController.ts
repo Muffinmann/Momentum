@@ -6,7 +6,7 @@ class FieldController {
   key: string;
   model: FieldModel;
   modifierManager: FieldModifierManager
-  controlStrategy: ModifierControlStrategy // TODO keys should align with the FieldModel keys
+  controlStrategy: ModifierControlStrategy 
 
   constructor(props: {key: string, model: FieldModel, modifier: FieldModifierManager, controlStrategy:  ModifierControlStrategy}){
     this.key = props.key;
