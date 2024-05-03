@@ -5,7 +5,7 @@ import RadioInput from './RadioInput'
 import DemoPageCreation from './DemoPageCreation'
 
 function App() {
-  const [currentDemo, setCurrentDemo] = useState('modifier')
+  const [currentDemo, setCurrentDemo] = useState('pageCreation')
 
   return (
     <div className='main'>
