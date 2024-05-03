@@ -124,11 +124,10 @@ export class FieldStore {
 
   changeControlStrategy(name: 'simple' | 'priorityAsc' | 'priorityDesc') {
     if (name === 'simple') {
-      return
+      this.controller.changeControlStrategy(simpleModifierControlStrategy)
     }
     if (name === 'priorityAsc') {
       this.controller.changeControlStrategy(priorityAscModifierControlStrategy)
-      return
     }
     if (name === 'priorityDesc') {
       this.controller.changeControlStrategy(priorityDescModifierControlStrategy)
