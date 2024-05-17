@@ -66,28 +66,52 @@ export const tokenize = (text: string) => {
       }
       const props = []
       if (char === '[') {
-        char = text[++ptr]
+        const buffer = []
 
-        while (char !== ']'){
-          let key=''
-          while (char !== '=') {
-            key += char
-            char = text[++ptr]
-          }
+        char = text[++ptr] // skip "["
 
-          let value=''
-          char = text[++ptr] // skip the equal sign
-          while (!WHITESPACE.test(char) && char !== ']') {
-            value += char
-            char = text[++ptr]
-          }
-          props.push([key.trim(), JSON.parse(value.trim())])
+        while (char !== ']' && ptr < text.length) {
+          buffer.push(char)
+          char = text[++ptr]
         }
-        char = text[++ptr] // skip "]"
+
+        if (char === ']' && buffer.length) {
+          // process buffer
+          let bufferPtr = 0
+          let bufferChar = buffer[bufferPtr]
+          while (bufferPtr < buffer.length) {
+            let key=''
+            while (bufferChar !== '=' && bufferPtr < buffer.length) {
+              key += bufferChar
+              bufferChar = buffer[++bufferPtr]
+            }
+
+            let value=''
+            bufferChar = buffer[++bufferPtr] // skip the equal sign
+            while (!WHITESPACE.test(bufferChar) && bufferPtr < buffer.length) {
+              value += bufferChar
+              bufferChar = buffer[++bufferPtr]
+            }
+            bufferChar = buffer[++bufferPtr] // skip white space
+            console.log({key, value})
+            let parsed 
+            try {
+              parsed = JSON.parse(value)
+            } catch(e){
+              parsed = value
+            }
+            props.push([key.trim(), parsed.trim()])
+          }
+
+          tokens.push({type: 'componentRefName', value: componentRefName, start, end: ptr, props: Object.fromEntries(props)})
+          continue
+        } 
+
+        tokens.push({type: 'word', value: componentRefName.concat(...buffer), start, end: ptr })
+        continue
+      } else {
+          tokens.push({type: 'componentRefName', value: componentRefName, start, end: ptr, props: {}})
       }
-      const end = ptr;
-      tokens.push({type: 'componentRefName', value: componentRefName, start, end, props: Object.fromEntries(props)})
-      continue
     }
 
     if (LETTERS.test(char)) {
@@ -186,6 +210,9 @@ const DemoPageCreation = () => {
     const renderContent = tokens.map((token) => {
       if (token.type === 'componentRefName') {
         if (token.value in componentRefNameRegister) {
+          if (Object.values(token.props).length === 0) {
+            return token.value
+          }
           return componentRefNameRegister[token.value](token.props)
         }
       }
@@ -204,10 +231,11 @@ const DemoPageCreation = () => {
         <div>
           <textarea
             ref={textRef}
+            rows={20}
             style={{width: "700px", height: "100%", padding: "0.5rem"}}
             onChange={handleTextChange}
-            onKeyDown={handleKeydown}
-            onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
+            // onKeyDown={handleKeydown}
+            // onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
             // onPointerMove={(e) => console.log('pointer move: ', e,e.target.selectionStart, e.target.selectionEnd)}
           />
         </div>
