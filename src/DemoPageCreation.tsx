@@ -1,4 +1,4 @@
-import { ChangeEventHandler, ComponentProps, KeyboardEvent, KeyboardEventHandler, useDeferredValue, useEffect, useRef, useState } from "react";
+import { ChangeEventHandler, ComponentProps, KeyboardEventHandler, useDeferredValue, useEffect, useRef, useState } from "react";
 import DynamicField from "./DynamicField";
 import StoreMapContext from "./contexts";
 import { FieldStore, createStoreMap } from "./core/store";
@@ -60,12 +60,20 @@ export const tokenize = (text: string) => {
       let componentRefName = ''
       const start = ptr
       char = text[++ptr]
+      if (WHITESPACE.test(char)){
+        tokens.push({type: 'punctuation', value: "&", position: ptr})
+        continue
+      }
+
       while (LETTERS.test(char)){
         componentRefName += char;
         char = text[++ptr]
       }
+
       const props = []
       if (char === '[') {
+        // try to extract KV properties
+        const KEY_VALUE_PAIR = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
         const buffer = []
 
         char = text[++ptr] // skip "["
@@ -93,7 +101,6 @@ export const tokenize = (text: string) => {
               bufferChar = buffer[++bufferPtr]
             }
             bufferChar = buffer[++bufferPtr] // skip white space
-            console.log({key, value})
             let parsed 
             try {
               parsed = JSON.parse(value)
@@ -110,7 +117,7 @@ export const tokenize = (text: string) => {
         tokens.push({type: 'word', value: componentRefName.concat(...buffer), start, end: ptr })
         continue
       } else {
-          tokens.push({type: 'componentRefName', value: componentRefName, start, end: ptr, props: {}})
+        tokens.push({type: 'componentRefName', value: componentRefName, start, end: ptr, props: {}})
       }
     }
 
@@ -182,8 +189,15 @@ type Token = {
 // }
 // console.log(parseLines(tokenize(defaultText)))
 
+const DemoInput = (props: ComponentProps<'input'>) => <input {...props} />
 const componentRefNameRegister = {
-  'DynamicField': (props: ComponentProps<typeof DynamicField>) => <DynamicField {...props}/>
+  'DemoInput': DemoInput,
+  'DynamicField': (props: ComponentProps<typeof DynamicField>) => {
+    if (props.fieldKey === 'test-field-1'){
+      return <DynamicField {...props}/>
+    }
+    return null
+}
 }
 
 
@@ -210,9 +224,6 @@ const DemoPageCreation = () => {
     const renderContent = tokens.map((token) => {
       if (token.type === 'componentRefName') {
         if (token.value in componentRefNameRegister) {
-          if (Object.values(token.props).length === 0) {
-            return token.value
-          }
           return componentRefNameRegister[token.value](token.props)
         }
       }
@@ -225,23 +236,42 @@ const DemoPageCreation = () => {
     // console.log('key down', e)
     console.log(e.code+' key down \u2193',e.target.selectionStart, e.target.selectionEnd, e)
   }
+  const [showPopup, setShowPopup] = useState(false)
   return (
     <StoreMapContext.Provider value={fieldStoreMap}>
-      <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", padding: "1rem"}}>
+      <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", padding: "1rem"}}>
         <div>
+          <pre>
+            coming soon:
+            Edit section for field rules.
+          </pre>
+
+        </div>
+        <div style={{position: "relative"}}>
+          {showPopup && <div style={{position: "absolute"}}>
+            <ul style={{backgroundColor: "white"}}>
+              <li>opt1</li>
+            </ul>
+          </div> }
           <textarea
             ref={textRef}
             rows={20}
             style={{width: "700px", height: "100%", padding: "0.5rem"}}
             onChange={handleTextChange}
+            onKeyUp={(e) => {
+              const key = e.key
+              console.log({key, space: /\s/.test(key)})
+              if (/\s/i.test(key) && e.ctrlKey) {
+                setShowPopup(!showPopup)
+              }
+            }}
             // onKeyDown={handleKeydown}
             // onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
             // onPointerMove={(e) => console.log('pointer move: ', e,e.target.selectionStart, e.target.selectionEnd)}
           />
         </div>
         <div>
-          coming soon
-          <pre>{deferredText}</pre>
+          <pre style={{maxHeight: "80dvh", overflowY: "auto"}}>{deferredText}</pre>
         </div>
       </div>
     </StoreMapContext.Provider>
