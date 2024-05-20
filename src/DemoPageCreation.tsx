@@ -2,6 +2,7 @@ import { ChangeEventHandler, ComponentProps, KeyboardEventHandler, useDeferredVa
 import DynamicField from "./DynamicField";
 import StoreMapContext from "./contexts";
 import { FieldStore, createStoreMap } from "./core/store";
+import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 const {storeMap: fieldStoreMap} = createStoreMap({
   "test-field-1": {
@@ -155,6 +156,113 @@ type Token = {
 
 
 
+export const Editor = () => {
+	const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+	const monacoEl = useRef(null);
+
+	useEffect(() => {
+		if (monacoEl) {
+			setEditor((editor) => {
+				if (editor) return editor;
+
+        // Register a new language
+        monaco.languages.register({ id: "mySpecialLanguage" });
+
+        // Register a tokens provider for the language
+        monaco.languages.setMonarchTokensProvider("mySpecialLanguage", {
+          tokenizer: {
+            root: [
+              [/\[error.*/, "custom-error"],
+              [/\[notice.*/, "custom-notice"],
+              [/\[info.*/, "custom-info"],
+              [/\[[a-zA-Z 0-9:]+\]/, "custom-date"],
+            ],
+          },
+        });
+
+        // Define a new theme that contains only rules that match this language
+        monaco.editor.defineTheme("myCoolTheme", {
+          base: "vs",
+          inherit: false,
+          rules: [
+            { token: "custom-info", foreground: "808080" },
+            { token: "custom-error", foreground: "ff0000", fontStyle: "bold" },
+            { token: "custom-notice", foreground: "FFA500" },
+            { token: "custom-date", foreground: "008800" },
+          ],
+          colors: {
+            "editor.foreground": "#000000",
+          },
+        });
+
+        // Register a completion item provider for the new language
+        monaco.languages.registerCompletionItemProvider("mySpecialLanguage", {
+          provideCompletionItems: (model, position) => {
+            const word = model.getWordUntilPosition(position);
+            console.log({model, position})
+            const range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn,
+            };
+            const suggestions = [
+              {
+                label: "simpleText",
+                kind: monaco.languages.CompletionItemKind.Text,
+                insertText: "simpleText",
+                range: range,
+              },
+              {
+                label: "testing",
+                kind: monaco.languages.CompletionItemKind.Keyword,
+                insertText: "testing(${1:condition})",
+                insertTextRules:
+                  monaco.languages.CompletionItemInsertTextRule
+                    .InsertAsSnippet,
+                range: range,
+              },
+              {
+                label: "ifelse",
+                kind: monaco.languages.CompletionItemKind.Snippet,
+                insertText: [
+                  "if (${1:condition}) {",
+                  "\t$0",
+                  "} else {",
+                  "\t",
+                  "}",
+                ].join("\n"),
+                insertTextRules:
+                  monaco.languages.CompletionItemInsertTextRule
+                    .InsertAsSnippet,
+                documentation: "If-Else Statement",
+                range: range,
+              },
+            ];
+            return { suggestions: suggestions };
+          },
+        });
+
+
+				const standaloneEditor = monaco.editor.create(monacoEl.current!, {
+					value: ['function x() {', '\tconsole.log("Hello world!");', '}'].join('\n'),
+					language: 'typescript'
+				});
+        monaco.editor.setModelLanguage(standaloneEditor.getModel('inmemory://model/1'), 'mySpecialLanguage')
+        standaloneEditor.addCommand(monaco.KeyCode.F9, function () {
+          alert("F9 pressed!");
+        });
+        // console.log({model: monaco.editor.getModel()})
+        return standaloneEditor
+			});
+		}
+
+		return () => editor?.dispose();
+	}, [monacoEl.current]);
+
+	return <div style={{width: "700px", height: "100vh"}} ref={monacoEl}></div>;
+};
+
 // const parseLines = (tokens: Token[]) => {
 //   let currentLine = null
 //   let first
@@ -236,7 +344,6 @@ const DemoPageCreation = () => {
     // console.log('key down', e)
     console.log(e.code+' key down \u2193',e.target.selectionStart, e.target.selectionEnd, e)
   }
-  const [showPopup, setShowPopup] = useState(false)
   return (
     <StoreMapContext.Provider value={fieldStoreMap}>
       <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", padding: "1rem"}}>
@@ -247,13 +354,8 @@ const DemoPageCreation = () => {
           </pre>
 
         </div>
-        <div style={{position: "relative"}}>
-          {showPopup && <div style={{position: "absolute"}}>
-            <ul style={{backgroundColor: "white"}}>
-              <li>opt1</li>
-            </ul>
-          </div> }
-          <textarea
+        <div style={{position: "relative", width: "700px"}}>
+          {/* <textarea
             ref={textRef}
             rows={20}
             style={{width: "700px", height: "100%", padding: "0.5rem"}}
@@ -265,10 +367,11 @@ const DemoPageCreation = () => {
                 setShowPopup(!showPopup)
               }
             }}
-            // onKeyDown={handleKeydown}
-            // onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
-            // onPointerMove={(e) => console.log('pointer move: ', e,e.target.selectionStart, e.target.selectionEnd)}
-          />
+            onKeyDown={handleKeydown}
+            onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
+            onPointerMove={(e) => console.log('pointer move: ', e,e.target.selectionStart, e.target.selectionEnd)}
+          /> */}
+          <Editor />
         </div>
         <div>
           <pre style={{maxHeight: "80dvh", overflowY: "auto"}}>{deferredText}</pre>
