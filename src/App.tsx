@@ -9,14 +9,15 @@ function App() {
 
   return (
     <div className='main'>
-        <RadioInput
-          name="demoSelection"
-          value={currentDemo}
-          options={[
-            {name: 'modifier', value: 'modifier'},
-            {name: 'pageCreation', value: 'pageCreation'},
-          ]}
-          onChange={(e) => setCurrentDemo(e.target.value)} />
+      <RadioInput
+        name="demoSelection"
+        value={currentDemo}
+        options={[
+          {name: 'modifier', value: 'modifier'},
+          {name: 'pageCreation', value: 'pageCreation'},
+        ]}
+        onChange={(e) => setCurrentDemo(e.target.value)}
+      />
       {
         currentDemo === 'modifier' ? <DemoModifier /> : null
       }

@@ -1,8 +1,8 @@
-import { ChangeEventHandler, ComponentProps, KeyboardEventHandler, useDeferredValue, useEffect, useRef, useState } from "react";
+import { ChangeEventHandler, ComponentProps, useDeferredValue, useEffect, useRef, useState } from "react";
 import DynamicField from "./DynamicField";
 import StoreMapContext from "./contexts";
-import { FieldStore, createStoreMap } from "./core/store";
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import { createStoreMap } from "./core/store";
+import monaco from "./core/Editor";
 
 const {storeMap: fieldStoreMap} = createStoreMap({
   "test-field-1": {
@@ -146,7 +146,6 @@ export const tokenize = (text: string) => {
   return tokens
 }
 
-console.log(tokenize(defaultText))
 
 type Token = {
   type: string, value: string, start: number, end: number
@@ -156,146 +155,50 @@ type Token = {
 
 
 
-export const Editor = () => {
-	const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-	const monacoEl = useRef(null);
+export const Editor = ({onChange}: {onChange: (v:string)=>void}) => {
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoEl = useRef(null);
 
-	useEffect(() => {
-		if (monacoEl) {
-			setEditor((editor) => {
-				if (editor) return editor;
+  useEffect(() => {
+    if (monacoEl.current) {
+      if (editor) {
+        return;
+      }
 
-        // Register a new language
-        monaco.languages.register({ id: "mySpecialLanguage" });
+      const standaloneEditor = monaco.editor.create(monacoEl.current!, {
+        value: [
+          "This is a demo, you can use & to use a component. For example: &DemoInput[value=\"test-field-1\"] ",
+          "this way you can easily combine the field into the text. You can further refine the style",
+          "here by clicking the element.",
+        ].join('\n'),
+        language: 'mySpecialLanguage',
+        theme: 'myCoolTheme'
+      });
 
-        // Register a tokens provider for the language
-        monaco.languages.setMonarchTokensProvider("mySpecialLanguage", {
-          tokenizer: {
-            root: [
-              [/\[error.*/, "custom-error"],
-              [/\[notice.*/, "custom-notice"],
-              [/\[info.*/, "custom-info"],
-              [/\[[a-zA-Z 0-9:]+\]/, "custom-date"],
-            ],
-          },
-        });
+      standaloneEditor.addCommand(monaco.KeyCode.F9, function () {
+        alert("F9 pressed!");
+      });
 
-        // Define a new theme that contains only rules that match this language
-        monaco.editor.defineTheme("myCoolTheme", {
-          base: "vs",
-          inherit: false,
-          rules: [
-            { token: "custom-info", foreground: "808080" },
-            { token: "custom-error", foreground: "ff0000", fontStyle: "bold" },
-            { token: "custom-notice", foreground: "FFA500" },
-            { token: "custom-date", foreground: "008800" },
-          ],
-          colors: {
-            "editor.foreground": "#000000",
-          },
-        });
+      standaloneEditor.onDidChangeModelContent((e) => {
+        console.log('model content change', e)
+        if (onChange){
+          onChange( standaloneEditor.getValue())
+        }
+      })
+      standaloneEditor.onDidChangeModel((e) => {
+        console.log('model change', e)
+      })
 
-        // Register a completion item provider for the new language
-        monaco.languages.registerCompletionItemProvider("mySpecialLanguage", {
-          provideCompletionItems: (model, position) => {
-            const word = model.getWordUntilPosition(position);
-            console.log({model, position})
-            const range = {
-              startLineNumber: position.lineNumber,
-              endLineNumber: position.lineNumber,
-              startColumn: word.startColumn,
-              endColumn: word.endColumn,
-            };
-            const suggestions = [
-              {
-                label: "simpleText",
-                kind: monaco.languages.CompletionItemKind.Text,
-                insertText: "simpleText",
-                range: range,
-              },
-              {
-                label: "testing",
-                kind: monaco.languages.CompletionItemKind.Keyword,
-                insertText: "testing(${1:condition})",
-                insertTextRules:
-                  monaco.languages.CompletionItemInsertTextRule
-                    .InsertAsSnippet,
-                range: range,
-              },
-              {
-                label: "ifelse",
-                kind: monaco.languages.CompletionItemKind.Snippet,
-                insertText: [
-                  "if (${1:condition}) {",
-                  "\t$0",
-                  "} else {",
-                  "\t",
-                  "}",
-                ].join("\n"),
-                insertTextRules:
-                  monaco.languages.CompletionItemInsertTextRule
-                    .InsertAsSnippet,
-                documentation: "If-Else Statement",
-                range: range,
-              },
-            ];
-            return { suggestions: suggestions };
-          },
-        });
+      setEditor(standaloneEditor)
 
+      return () => standaloneEditor?.dispose();
+    }
 
-				const standaloneEditor = monaco.editor.create(monacoEl.current!, {
-					value: ['function x() {', '\tconsole.log("Hello world!");', '}'].join('\n'),
-					language: 'typescript'
-				});
-        monaco.editor.setModelLanguage(standaloneEditor.getModel('inmemory://model/1'), 'mySpecialLanguage')
-        standaloneEditor.addCommand(monaco.KeyCode.F9, function () {
-          alert("F9 pressed!");
-        });
-        // console.log({model: monaco.editor.getModel()})
-        return standaloneEditor
-			});
-		}
+  }, []);
 
-		return () => editor?.dispose();
-	}, [monacoEl.current]);
-
-	return <div style={{width: "700px", height: "100vh"}} ref={monacoEl}></div>;
+  return <div style={{width: "700px", height: "100vh"}} ref={monacoEl}></div>;
 };
 
-// const parseLines = (tokens: Token[]) => {
-//   let currentLine = null
-//   let first
-// //  const lines: Line[] = []
-//  let lineCount = 1;
-//  let stack: Token[] = [];
-//  for (const token of tokens) {
-//     if (token.type === 'linefeed') {
-//       const newLine = new Line(lineCount, stack)
-//       if (currentLine !== null) {
-//         currentLine.next = newLine
-//         newLine.previous = currentLine
-//       } else {
-//         currentLine = newLine
-//         first = currentLine
-//       }
-
-//       stack = []
-//       lineCount += 1
-//       currentLine = newLine
-//       continue
-//     }
-//     stack.push(token)
-//  }
-// //  for (let i=0; i<lines.length -2; i++) {
-// //   const current = lines[i]
-// //   const next = lines[i+1]
-// //   current.next = next
-// //   next.previous = current
-// //  }
-//   return first
-// }
-// console.log(parseLines(tokenize(defaultText)))
 
 const DemoInput = (props: ComponentProps<'input'>) => <input {...props} />
 const componentRefNameRegister = {
@@ -305,7 +208,7 @@ const componentRefNameRegister = {
       return <DynamicField {...props}/>
     }
     return null
-}
+  }
 }
 
 
@@ -321,13 +224,6 @@ const DemoPageCreation = () => {
 
   const handleTextChange: ChangeEventHandler<HTMLTextAreaElement> = (e) => {
     const val = e.target.value
-    // console.log("selection end:", e.target.selectionEnd, e)
-    // console.log(e)
-    // const match = val.match(/&DynamicField/)
-    // console.log('match: ', match)
-    // const cropped = match ? val.slice(0, match.index) : val
-    // setText([cropped, match ? <DynamicField fieldKey="test-field-1" /> : null, match ? val.slice(match.index + match[0].length) : null])
-    // const parsed = val.replace('&DynamicField', '')
     const tokens = tokenize(val)
     const renderContent = tokens.map((token) => {
       if (token.type === 'componentRefName') {
@@ -340,10 +236,7 @@ const DemoPageCreation = () => {
     setText(renderContent)
   }
 
-  const handleKeydown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
-    // console.log('key down', e)
-    console.log(e.code+' key down \u2193',e.target.selectionStart, e.target.selectionEnd, e)
-  }
+
   return (
     <StoreMapContext.Provider value={fieldStoreMap}>
       <div style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", padding: "1rem"}}>
@@ -355,23 +248,7 @@ const DemoPageCreation = () => {
 
         </div>
         <div style={{position: "relative", width: "700px"}}>
-          {/* <textarea
-            ref={textRef}
-            rows={20}
-            style={{width: "700px", height: "100%", padding: "0.5rem"}}
-            onChange={handleTextChange}
-            onKeyUp={(e) => {
-              const key = e.key
-              console.log({key, space: /\s/.test(key)})
-              if (/\s/i.test(key) && e.ctrlKey) {
-                setShowPopup(!showPopup)
-              }
-            }}
-            onKeyDown={handleKeydown}
-            onKeyUp={(e) => {console.log(e.code+' key up \u2191',  e.target.selectionStart, e.target.selectionEnd, e)}}
-            onPointerMove={(e) => console.log('pointer move: ', e,e.target.selectionStart, e.target.selectionEnd)}
-          /> */}
-          <Editor />
+          <Editor onChange={(v) => handleTextChange({target: {value: v}})} />
         </div>
         <div>
           <pre style={{maxHeight: "80dvh", overflowY: "auto"}}>{deferredText}</pre>
