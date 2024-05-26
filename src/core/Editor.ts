@@ -10,7 +10,7 @@ monaco.languages.setMonarchTokensProvider("mySpecialLanguage", {
       [/(?:&)[a-zA-Z0-9]+/, "componentName"],
       [/&/, "refIdentifier"],
       [/\[info.*/, "custom-info"],
-      [/\[[a-zA-Z 0-9:]+\]/, "property"],
+      [/\[[a-zA-Z0-9"=-]+\]/, "property"],
     ],
   },
 });
@@ -23,7 +23,7 @@ monaco.editor.defineTheme("myCoolTheme", {
     { token: "refIdentifier", foreground: "808080" },
     { token: "componentName", foreground: "ff0000", fontStyle: "bold" },
     { token: "custom-notice", foreground: "FFA500" },
-    { token: "custom-date", foreground: "008800" },
+    { token: "property", foreground: "008800" },
   ],
   colors: {
     "editor.foreground": "#000000",
